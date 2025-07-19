@@ -1,27 +1,28 @@
 using Microsoft.AspNetCore.Mvc;
 using QRCoder;
-using System.Drawing;
-using System.Drawing.Imaging;
+using QRCoder.SkiaSharp; // ✅ Using the file you just added
+using SkiaSharp;
+using System.IO;
 
-namespace ResumeQRCodeAPI.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class QRCodeController : ControllerBase
+namespace ResumeQRCodeAPI.Controllers
 {
-    [HttpGet]
-public IActionResult GetQRCode()
-{
-    using var qrGenerator = new QRCodeGenerator();
-using var qrCodeData = qrGenerator.CreateQrCode("https://mansi-portfolio-b12c2.web.app/assets/Mansi_Mishra.pdf", QRCodeGenerator.ECCLevel.Q);
-    using var qrCode = new QRCode(qrCodeData);
-    using var bitmap = qrCode.GetGraphic(20);
+    [Route("api/[controller]")]
+    [ApiController]
+    public class QRCodeController : ControllerBase
+    {
+        [HttpGet("generate")]
+        public IActionResult Generate()
+        {
+            var qrGenerator = new QRCodeGenerator();
+            var qrCodeData = qrGenerator.CreateQrCode("https://mansi-portfolio-b12c2.web.app", QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new SkiaSharpQRCode(qrCodeData);
 
-    using var stream = new MemoryStream();
-    bitmap.Save(stream, ImageFormat.Png);
-    stream.Seek(0, SeekOrigin.Begin);
+            using var image = qrCode.GetGraphic(20);
+            using var ms = new MemoryStream();
+            image.Encode(SKEncodedImageFormat.Png, 100).SaveTo(ms);
 
-    return File(stream.ToArray(), "image/png");
+            return File(ms.ToArray(), "image/png");
+        }
+    }
 }
 
-}
